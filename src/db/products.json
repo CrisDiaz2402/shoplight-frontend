@@ -1,0 +1,98 @@
+[
+	{
+		"id": 1,
+		"name": "Laptop Pro 15\"",
+		"stock": 12,
+		"categoryId": 1,
+		"category": { "id": 1, "name": "Electrónica" },
+		"description": "Potente laptop para profesionales con procesador de última generación",
+		"price": 1299.99,
+		"imageUrl": "https://picsum.photos/id/180/800/600",
+		"createdAt": "2025-01-10T12:00:00.000Z",
+		"updatedAt": "2025-01-10T12:00:00.000Z"
+	},
+	{
+		"id": 2,
+		"name": "Auriculares Inalámbricos",
+		"stock": 25,
+		"categoryId": 1,
+		"category": { "id": 1, "name": "Electrónica" },
+		"description": "Auriculares con cancelación de ruido y sonido premium",
+		"price": 199.99,
+		"imageUrl": "https://picsum.photos/id/1060/800/600",
+		"createdAt": "2025-01-11T12:00:00.000Z",
+		"updatedAt": "2025-01-11T12:00:00.000Z"
+	},
+	{
+		"id": 3,
+		"name": "Smartwatch Fitness",
+		"stock": 0,
+		"categoryId": 1,
+		"category": { "id": 1, "name": "Electrónica" },
+		"description": "Reloj inteligente con monitor de salud y GPS integrado",
+		"price": 349.99,
+		"imageUrl": "https://picsum.photos/id/1074/800/600",
+		"createdAt": "2025-01-12T12:00:00.000Z",
+		"updatedAt": "2025-01-12T12:00:00.000Z"
+	},
+	{
+		"id": 4,
+		"name": "Cámara DSLR",
+		"stock": 4,
+		"categoryId": 1,
+		"category": { "id": 1, "name": "Electrónica" },
+		"description": "Cámara profesional con lente de 24MP y grabación 4K",
+		"price": 899.99,
+		"imageUrl": "https://picsum.photos/id/250/800/600",
+		"createdAt": "2025-01-13T12:00:00.000Z",
+		"updatedAt": "2025-01-13T12:00:00.000Z"
+	},
+	{
+		"id": 5,
+		"name": "Teclado Mecánico",
+		"stock": 18,
+		"categoryId": 2,
+		"category": { "id": 2, "name": "Accesorios" },
+		"description": "Teclado mecánico retroiluminado con switches táctiles",
+		"price": 119.99,
+		"imageUrl": "https://picsum.photos/id/1067/800/600",
+		"createdAt": "2025-01-14T12:00:00.000Z",
+		"updatedAt": "2025-01-14T12:00:00.000Z"
+	},
+	{
+		"id": 6,
+		"name": "Monitor 27\" 4K",
+		"stock": 7,
+		"categoryId": 1,
+		"category": { "id": 1, "name": "Electrónica" },
+		"description": "Monitor 4K con HDR y panel IPS para colores precisos",
+		"price": 599.99,
+		"imageUrl": "https://picsum.photos/id/1015/800/600",
+		"createdAt": "2025-01-15T12:00:00.000Z",
+		"updatedAt": "2025-01-15T12:00:00.000Z"
+	},
+	{
+		"id": 7,
+		"name": "Smartphone X",
+		"stock": 5,
+		"categoryId": 1,
+		"category": { "id": 1, "name": "Electrónica" },
+		"description": "Smartphone con cámara múltiple y batería de larga duración",
+		"price": 999.0,
+		"imageUrl": "https://picsum.photos/id/1069/800/600",
+		"createdAt": "2025-01-16T12:00:00.000Z",
+		"updatedAt": "2025-01-16T12:00:00.000Z"
+	},
+	{
+		"id": 8,
+		"name": "Altavoz Bluetooth",
+		"stock": 30,
+		"categoryId": 2,
+		"category": { "id": 2, "name": "Accesorios" },
+		"description": "Altavoz portátil con sonido potente y resistencia al agua",
+		"price": 79.99,
+		"imageUrl": "https://picsum.photos/id/1084/800/600",
+		"createdAt": "2025-01-17T12:00:00.000Z",
+		"updatedAt": "2025-01-17T12:00:00.000Z"
+	}
+]
