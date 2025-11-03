@@ -9,7 +9,7 @@
 
       <div class="mt-6">
         <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-          <CardsProducts v-for="product in products" :key="product.id" :product="product" @add="addToCart" />
+          <CardsProducts v-for="product in productsStore.products" :key="product.id" :product="product" @add="addToCart" />
         </div>
       </div>
     </section>
@@ -19,18 +19,29 @@
 <script setup lang="ts">
 import HeaderLayout from '../layout/headerLayout.vue'
 import CardsProducts from '../ui/cardsProducts.vue'
-import productsData from '../db/products.json'
-import { ref } from 'vue'
+import { onMounted } from 'vue'
 import { useCartStore } from '../stores/cart'
+import { useProductsStore } from '../stores/products'
+import { toast } from '../lib/toast'
 
-// Tip: productsData está importado directamente desde JSON centralizado
-const products = ref(productsData as any[])
-
+// Use products store for centralized product list and refreshing
+const productsStore = useProductsStore()
 const cart = useCartStore()
+
+onMounted(() => {
+  // fetch products into the central store
+  productsStore.fetchProducts().catch(() => {})
+})
 
 function addToCart(product: any) {
   // Añadir al store de Pinia
   cart.addProduct(product, 1)
+  // Mostrar toast de éxito al agregar
+  try {
+    toast.success(`${product.name} se ha agregado al carrito`)
+  } catch (e) {
+    // no bloquear en caso de error con el toast
+  }
 }
 </script>
 

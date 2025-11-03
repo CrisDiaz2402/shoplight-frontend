@@ -11,17 +11,47 @@
 </template>
 
 <script setup lang="ts">
-import { defineProps, defineEmits } from 'vue'
+import { defineProps, defineEmits, computed } from 'vue'
+import { useUserStore } from '../../stores/user'
+import { clearAuth } from '../../lib/api'
+import toast from '../../lib/toast'
 
-const props = defineProps<{ user: { id?: number; name: string; email: string; createdAt?: string; updatedAt?: string } }>()
+const props = defineProps<{ user?: { id?: number; name?: string; email?: string; createdAt?: string; updatedAt?: string } }>()
 const emits = defineEmits<{
   (e: 'logout'): void
 }>()
 
-const user = props.user || { id: 0, name: 'usuario', email: 'usuario@gmail.com', createdAt: undefined, updatedAt: undefined }
+const userStore = useUserStore()
+
+// Prefer prop.user when provided; otherwise use the current user from the store.
+const user = computed(() => {
+  return (
+    props.user ?? userStore.currentUser ?? { id: 0, name: 'usuario', email: 'usuario@gmail.com', createdAt: undefined, updatedAt: undefined }
+  )
+})
 
 function onLogout() {
-  // Emitimos el evento, sin funcionalidad implementada aún
+  // Clear local state and token, then emit logout so parent can react.
+  // central helper to clear token from axios defaults and localStorage
+  try {
+    clearAuth()
+  } catch (e) {
+    // ignore
+  }
+  // clear user in store
+  try {
+    userStore.clearUser()
+  } catch (e) {
+    // ignore
+  }
+
+  // show an informational toast to confirm logout
+  try {
+    toast.info('Sesión cerrada correctamente')
+  } catch (e) {
+    // ignore toast errors
+  }
+
   emits('logout')
 }
 </script>

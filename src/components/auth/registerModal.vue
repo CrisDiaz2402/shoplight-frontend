@@ -69,8 +69,10 @@ const emit = defineEmits<{
   (e: 'show-login'): void
 }>()
 
-import axios from 'axios'
-import { useUserStore } from '../../stores/user'
+import { api } from '../../lib/api'
+import toast from '../../lib/toast'
+// userStore is not needed during registration because we don't auto-login
+// import { useUserStore } from '../../stores/user'
 
 const name = ref('')
 const email = ref('')
@@ -78,7 +80,7 @@ const password = ref('')
 const loading = ref(false)
 const error = ref<string | null>(null)
 
-const userStore = useUserStore()
+// const userStore = useUserStore()
 
 function onClose() {
   emit('close')
@@ -91,18 +93,28 @@ async function onSubmit() {
   loading.value = true
   error.value = null
   try {
-    // Expecting backend endpoint: POST /api/auth/register -> { user }
-    const res = await axios.post('/api/auth/register', { name: name.value, email: email.value, password: password.value })
+    // Call backend register endpoint. Expecting 201 with created user object.
+    const res = await api.post('/auth/register', { name: name.value, email: email.value, password: password.value })
     const user = res.data?.user ?? res.data
-    if (user) {
-      userStore.setUser(user)
+    if (user && user.id) {
+      // Do NOT set the user in the store and do NOT persist token here.
+      // After successful registration, request the UI to show the login modal so the user can authenticate.
+      // Show a success toast with the backend message (if any)
+      try {
+        const msg = res.data?.message || 'Usuario registrado correctamente'
+        toast.success(msg)
+      } catch (e) {
+        // ignore toast errors
+      }
       emit('registered', user)
-      emit('close')
+      // Ask parent (authModal) to switch to login view
+      emit('show-login')
     } else {
       error.value = 'Respuesta de servidor inválida'
     }
   } catch (err: any) {
-    error.value = err?.response?.data?.message || err?.message || 'Error al registrar'
+    // Prefer backend 'error' field when present (e.g. { error: 'El email ya está registrado' })
+    error.value = err?.response?.data?.error || err?.response?.data?.message || err?.message || 'Error al registrar'
   } finally {
     loading.value = false
   }

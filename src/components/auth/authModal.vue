@@ -57,9 +57,10 @@ function onAuthenticated(user: any) {
   emit('close')
 }
 
-function onRegistered(user: any) {
-  emit('registered', user)
-  emit('close')
+function onRegistered() {
+  // After successful registration, switch to the login view so the user can authenticate.
+  // Do not auto-close the modal; keep it open and show login.
+  setMode('login')
 }
 </script>
 

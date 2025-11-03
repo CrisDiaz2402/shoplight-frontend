@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
+import toast from '../lib/toast'
 
 interface CartItem {
   productId: number
@@ -11,6 +12,34 @@ interface CartItem {
 
 export const useCartStore = defineStore('cart', () => {
   const items = ref<CartItem[]>([])
+
+  const CART_STORAGE_KEY = 'shoplight_cart'
+
+  // Try to restore persisted cart on store init
+  try {
+    const raw = localStorage.getItem(CART_STORAGE_KEY)
+    if (raw) {
+      const parsed = JSON.parse(raw)
+      if (Array.isArray(parsed)) {
+        items.value = parsed
+      }
+    }
+  } catch (e) {
+    // ignore parse/storage errors
+  }
+
+  // Persist cart to localStorage whenever items change
+  watch(
+    items,
+    (val) => {
+      try {
+        localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(val))
+      } catch (e) {
+        // ignore storage errors
+      }
+    },
+    { deep: true }
+  )
 
   function findIndex(productId: number) {
     return items.value.findIndex((i) => i.productId === productId)
@@ -41,7 +70,16 @@ export const useCartStore = defineStore('cart', () => {
 
   function removeProduct(productId: number) {
     const idx = findIndex(productId)
-    if (idx >= 0) items.value.splice(idx, 1)
+    if (idx >= 0) {
+      // remove and capture removed item to show informative toast
+      const [removed] = items.value.splice(idx, 1)
+      const name = removed?.product?.name ?? `Producto (id ${productId})`
+      try {
+        toast.info(`${name} ha sido eliminado del carrito`)
+      } catch (e) {
+        // ignore any toast errors
+      }
+    }
   }
 
   function setQuantity(productId: number, quantity: number) {
@@ -60,6 +98,11 @@ export const useCartStore = defineStore('cart', () => {
 
   function clearCart() {
     items.value = []
+    try {
+      localStorage.removeItem(CART_STORAGE_KEY)
+    } catch (e) {
+      // ignore
+    }
   }
 
   const totalItems = computed(() => items.value.reduce((s, it) => s + it.quantity, 0))

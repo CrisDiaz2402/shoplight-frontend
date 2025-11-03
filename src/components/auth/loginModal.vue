@@ -60,8 +60,9 @@ const emit = defineEmits<{
   (e: 'show-register'): void
 }>()
 
-import axios from 'axios'
 import { useUserStore } from '../../stores/user'
+import { api, setAuthToken, TOKEN_STORAGE_KEY } from '../../lib/api'
+import toast from '../../lib/toast'
 
 const email = ref('')
 const password = ref('')
@@ -81,15 +82,92 @@ async function onSubmit() {
   loading.value = true
   error.value = null
   try {
-    // Expecting backend endpoint: POST /api/auth/login -> { user }
-    const res = await axios.post('/api/auth/login', { email: email.value, password: password.value })
-    const user = res.data?.user ?? res.data
-    if (user) {
-      userStore.setUser(user)
-      emit('authenticated', user)
+    // Call backend login endpoint. Expected response: { token: '<JWT>' }
+    const res = await api.post('/auth/login', { email: email.value, password: password.value })
+    const token = res.data?.token
+    if (!token) {
+      // Some backends may return the user directly; handle that case too
+      const possibleUser = res.data?.user ?? res.data
+      if (possibleUser && possibleUser.id) {
+        userStore.setUser(possibleUser)
+        // show success toast using backend message when available
+        try {
+          const msg = res.data?.message || 'Sesión iniciada correctamente'
+          toast.success(msg)
+        } catch (e) {
+          // ignore
+        }
+        emit('authenticated', possibleUser)
+        emit('close')
+      } else {
+        error.value = 'Respuesta de servidor inválida'
+      }
+      return
+    }
+
+    // Save token and configure api client
+    try {
+      setAuthToken(token)
+    } catch (e) {
+      // ignore
+    }
+    try {
+      localStorage.setItem(TOKEN_STORAGE_KEY, token)
+    } catch (e) {
+      // ignore storage errors
+    }
+
+    // If the backend returned a `user` object together with the token, prefer it.
+    const returnedUser = res.data?.user
+    if (returnedUser && returnedUser.id) {
+      userStore.setUser(returnedUser)
+      try {
+        localStorage.setItem('shoplight_user', JSON.stringify(returnedUser))
+      } catch (e) {
+        // ignore
+      }
+      // show success toast using backend message when available
+      try {
+        const msg = res.data?.message || 'Sesión iniciada correctamente'
+        toast.success(msg)
+      } catch (e) {
+        // ignore
+      }
+      emit('authenticated', returnedUser)
       emit('close')
-    } else {
-      error.value = 'Respuesta de servidor inválida'
+      return
+    }
+
+    // Otherwise decode the JWT payload to obtain minimal user info (id, email, name).
+    try {
+      const payloadPart = token.split('.')[1]
+      const decoded = JSON.parse(atob(payloadPart.replace(/-/g, '+').replace(/_/g, '/')))
+      const userFromToken: any = {
+        id: decoded.sub ?? decoded.id,
+        email: decoded.email,
+        name: decoded.name ?? decoded.username ?? ''
+      }
+      userStore.setUser(userFromToken)
+      try {
+        localStorage.setItem('shoplight_user', JSON.stringify(userFromToken))
+      } catch (e) {
+        // ignore
+      }
+      // show a generic success toast (backend may not include a message when only token returned)
+      try {
+        const msg = res.data?.message || 'Sesión iniciada correctamente'
+        toast.success(msg)
+      } catch (e) {
+        // ignore
+      }
+      emit('authenticated', userFromToken)
+      emit('close')
+      return
+    } catch (err) {
+      // if decoding fails, still close and emit empty user
+      emit('authenticated', {} as any)
+      emit('close')
+      return
     }
   } catch (err: any) {
     error.value = err?.response?.data?.message || err?.message || 'Error al autenticar'
