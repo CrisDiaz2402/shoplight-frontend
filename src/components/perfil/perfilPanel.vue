@@ -5,6 +5,7 @@
       <div class="text-xs text-slate-500 mt-1">{{ user.email }}</div>
     </div>
     <div class="border-t border-slate-100">
+      <button v-if="hasUser" @click="emits('purchases')" class="w-full text-left px-4 py-3 text-slate-700 hover:bg-slate-50 border-b border-slate-100">Mis Compras</button>
       <button @click="onLogout" class="w-full text-left px-4 py-3 text-slate-700 hover:bg-slate-50">Cerrar sesión</button>
     </div>
   </div>
@@ -19,6 +20,7 @@ import toast from '../../lib/toast'
 const props = defineProps<{ user?: { id?: number; name?: string; email?: string; createdAt?: string; updatedAt?: string } }>()
 const emits = defineEmits<{
   (e: 'logout'): void
+  (e: 'purchases'): void
 }>()
 
 const userStore = useUserStore()
@@ -28,6 +30,11 @@ const user = computed(() => {
   return (
     props.user ?? userStore.currentUser ?? { id: 0, name: 'usuario', email: 'usuario@gmail.com', createdAt: undefined, updatedAt: undefined }
   )
+})
+
+// Boolean: true cuando hay un usuario real (prop o store)
+const hasUser = computed(() => {
+  return !!(props.user ?? userStore.currentUser)
 })
 
 function onLogout() {

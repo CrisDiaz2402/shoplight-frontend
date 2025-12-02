@@ -15,6 +15,47 @@ const routes = [
     component: () => import('../views/homeView.vue'),
   },
   {
+    path: '/miscompras',
+    name: 'Compras',
+    // lazy-load
+    component: () => import('../views/purchasesView.vue'),
+  },
+  {
+    path: '/adminproductos',
+    name: 'AdminHome',
+    // lazy-load
+    component: () => import('../views/homeAdmin.vue'),
+    children: [
+      {
+        path: '',
+        name: 'AdminProductos',
+        component: () => import('../components/homeAdmin/productsAdmin.vue'),
+      },
+      {
+        path: 'usuarios',
+        name: 'AdminUsuarios',
+        component: () => import('../components/homeAdmin/usersAdmin.vue'),
+      },
+      {
+        path: 'categorias',
+        name: 'AdminCategorias',
+        component: () => import('../components/homeAdmin/categoryAdmin.vue'),
+      },
+      {
+        path: 'categorias/crear',
+        name: 'CreateCategory',
+        component: () => import('../components/formularios/categorias/createCategory.vue'),
+      },
+      {
+        path: 'categorias/:id/editar',
+        name: 'EditCategory',
+        component: () => import('../components/formularios/categorias/editCategory.vue'),
+        props: true,
+      },
+    ],
+  },
+  
+  {
     path: '/:pathMatch(.*)*',
     name: 'NotFound',
     component: HomeView,

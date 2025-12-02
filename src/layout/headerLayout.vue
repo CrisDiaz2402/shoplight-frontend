@@ -57,7 +57,7 @@
 						</button>
 
 						<div v-if="showProfile && logged" class="absolute right-0 mt-2 z-30">
-								<PerfilPanel :user="user" @logout="onLogout" />
+								<PerfilPanel :user="user" @logout="onLogout" @purchases="onGoToPurchases" />
 							</div>
 					</div>
 				</div>
@@ -77,6 +77,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
+import { useRouter } from 'vue-router'
 import { Icon } from '@iconify/vue'
 import { useCartStore } from '../stores/cart'
 import PerfilPanel from '../components/perfil/perfilPanel.vue'
@@ -85,6 +86,8 @@ import AuthModal from '../components/auth/authModal.vue'
 import ShopCarPanel from '../components/shopcar/shopCarPanel.vue'
 import FinishedPanel from '../components/shopcar/finishedPanel.vue'
 import { useUiStore } from '../stores/ui'
+
+const router = useRouter()
 
 // Busqueda local
 const query = ref('')
@@ -153,10 +156,21 @@ function openCart() {
 	showCart.value = true
 }
 
-function onAuth() {
+function onAuth(payload?: any) {
 	// Cuando el usuario se autentica o registra, cerrar modal
 	uiStore.closeLogin()
 	showProfile.value = false
+
+	// Redirigir según el rol del usuario
+	const role = payload?.user?.role ?? userStore.currentUser?.role
+
+	if (role === 'admin') {
+		// Redirigir al panel admin
+		router.push('/adminproductos')
+	} else {
+		// Por defecto ir al home para clientes u otros roles
+		router.push('/')
+	}
 }
 
 function onCheckout(payload?: any) {
@@ -177,6 +191,12 @@ function onLogout() {
 	}
 	// pendingOrder should be cleared as well
 	pendingOrder.value = null
+}
+
+function onGoToPurchases() {
+	// Cerrar el panel de perfil y navegar a la vista de compras
+	showProfile.value = false
+	router.push('/miscompras')
 }
 
 function onDocumentClick(e: Event) {
