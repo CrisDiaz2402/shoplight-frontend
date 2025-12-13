@@ -15,23 +15,6 @@
                     <span>Crear Categoría</span>
                 </button>
             </div>
-
-            <div class="mt-6">
-                <div class="relative">
-                    <input
-                        v-model="searchQuery"
-                        @input="setSearchQuery(searchQuery)"
-                        type="text"
-                        placeholder="Buscar categorías..."
-                        class="w-full rounded-lg border border-slate-200 bg-white placeholder-slate-400 py-3 pl-12 pr-4 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                        aria-label="Buscar categorías"
-                    />
-
-                    <span class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">
-                        <Icon icon="ic:round-search" width="20" height="20" />
-                    </span>
-                </div>
-            </div>
         </header>
 
         <main>
@@ -71,9 +54,7 @@
                             <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
                                 Descripción
                             </th>
-                            <th class="px-6 py-3 text-center text-xs font-medium text-slate-500 uppercase tracking-wider">
-                                Productos
-                            </th>
+                            
                             <th class="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">
                                 Creado
                             </th>
@@ -92,11 +73,7 @@
                                     {{ category.description || 'Sin descripción' }}
                                 </div>
                             </td>
-                            <td class="px-6 py-4 text-center">
-                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                                    {{ category.productCount || 0 }}
-                                </span>
-                            </td>
+                            
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
                                 {{ formatDate(category.createdAt) }}
                             </td>
@@ -154,7 +131,6 @@ const {
   searchQuery,
   fetchCategories,
   deleteCategory,
-  setSearchQuery,
   clearError
 } = useCategories()
 

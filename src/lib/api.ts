@@ -20,6 +20,20 @@ export const api = axios.create({
   headers: { 'Content-Type': 'application/json' },
 })
 
+// Interceptor: asegurar que si hay un token en localStorage se adjunte
+api.interceptors.request.use((config) => {
+  try {
+    const t = localStorage.getItem(TOKEN_STORAGE_KEY)
+    if (t) {
+      config.headers = config.headers || {}
+      config.headers['Authorization'] = `Bearer ${t}`
+    }
+  } catch (e) {
+    // ignore
+  }
+  return config
+})
+
 /**
  * Establece o elimina el header Authorization en el cliente `api`.
  * Útil para inyectar el JWT después del login.

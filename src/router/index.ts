@@ -42,6 +42,17 @@ const routes = [
         component: () => import('../components/homeAdmin/categoryAdmin.vue'),
       },
       {
+        path: 'usuarios/crear',
+        name: 'CreateAdmin',
+        component: () => import('../components/formularios/admin/createAdmin.vue'),
+      },
+      {
+        path: 'usuarios/:id/editar',
+        name: 'EditAdmin',
+        component: () => import('../components/formularios/admin/editAdmin.vue'),
+        props: true,
+      },
+      {
         path: 'categorias/crear',
         name: 'CreateCategory',
         component: () => import('../components/formularios/categorias/createCategory.vue'),
@@ -50,6 +61,17 @@ const routes = [
         path: 'categorias/:id/editar',
         name: 'EditCategory',
         component: () => import('../components/formularios/categorias/editCategory.vue'),
+        props: true,
+      },
+      {
+        path: 'productos/crear',
+        name: 'CreateProduct',
+        component: () => import('../components/formularios/productos/createProduct.vue'),
+      },
+      {
+        path: 'productos/:id/editar',
+        name: 'EditProduct',
+        component: () => import('../components/formularios/productos/editProduct.vue'),
         props: true,
       },
     ],

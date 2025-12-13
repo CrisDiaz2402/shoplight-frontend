@@ -12,7 +12,7 @@
 </template>
 
 <script setup lang="ts">
-import { defineProps, defineEmits, computed } from 'vue'
+import { computed } from 'vue'
 import { useUserStore } from '../../stores/user'
 import { clearAuth } from '../../lib/api'
 import toast from '../../lib/toast'
