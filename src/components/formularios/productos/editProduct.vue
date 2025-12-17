@@ -23,7 +23,7 @@
           >
             <div v-if="loading" class="flex items-center">
               <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-              Guardando...
+              {{ statusMessage }}
             </div>
             <span v-else class="flex items-center">
               <Icon icon="mdi:content-save" class="w-4 h-4 mr-2" />
@@ -109,15 +109,47 @@
             </div>
           </div>
 
-          <!-- Image URL -->
+          <!-- Imagen del Producto -->
           <div>
-            <label for="imageUrl" class="block text-sm font-medium text-gray-700">URL de imagen (opcional)</label>
-            <div class="mt-1">
-              <input id="imageUrl" v-model="formData.imageUrl" type="url"
-                class="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                :class="{ 'border-red-300 focus:border-red-500 focus:ring-red-500': errors.imageUrl }" placeholder="https://..." />
-              <p v-if="errors.imageUrl" class="mt-2 text-sm text-red-600">{{ errors.imageUrl }}</p>
+            <label class="block text-sm font-medium text-gray-700">Imagen del Producto</label>
+            
+            <!-- Preview de imagen actual -->
+            <div v-if="currentImageUrl" class="mt-2 mb-4">
+              <p class="text-sm text-gray-600 mb-2">Imagen actual:</p>
+              <div class="relative inline-block">
+                <img 
+                  :src="currentImageUrl" 
+                  alt="Imagen actual del producto"
+                  class="w-32 h-32 object-cover rounded-lg border border-gray-200"
+                  @error="currentImageUrl = null"
+                />
+              </div>
             </div>
+
+            <!-- Input para nueva imagen -->
+            <div class="mt-2">
+              <input
+                type="file"
+                @change="handleFileChange"
+                accept="image/*"
+                class="block w-full text-sm text-gray-500
+                  file:mr-4 file:py-2 file:px-4
+                  file:rounded-md file:border-0
+                  file:text-sm file:font-semibold
+                  file:bg-indigo-50 file:text-indigo-700
+                  hover:file:bg-indigo-100"
+              />
+            </div>
+            
+            <p v-if="selectedFileName" class="mt-2 text-sm text-green-600">
+              Nueva imagen seleccionada: {{ selectedFileName }}
+            </p>
+            <p v-else-if="!currentImageUrl" class="mt-1 text-xs text-gray-500">
+              No hay imagen asignada. Selecciona un archivo para agregar una.
+            </p>
+            <p v-else class="mt-1 text-xs text-gray-500">
+              Selecciona un archivo para reemplazar la imagen actual.
+            </p>
           </div>
 
           <!-- Mensaje de error general -->
@@ -143,6 +175,7 @@ import { useRouter, useRoute } from 'vue-router'
 import { Icon } from '@iconify/vue'
 import { useProducts } from '../../../composables/productos/useProducts'
 import { useCategories } from '../../../composables/categories/useCategories'
+import { api } from '../../../lib/api'
 import toast from '../../../lib/toast'
 
 interface Props { id?: string }
@@ -156,10 +189,16 @@ const { fetchCategories, filteredCategories } = useCategories()
 const formData = ref<any>({ name: '', description: '', price: 0, imageUrl: '', stock: 0, categoryId: null })
 const loading = ref(false)
 const loadingProduct = ref(false)
+const statusMessage = ref('Guardando...')
 const generalError = ref('')
 const errors = ref<Record<string,string>>({})
 const categoriesList = ref<any[]>([])
 const productId = ref<number | null>(null)
+
+// Variables para manejo de archivos
+const selectedFile = ref<File | null>(null)
+const selectedFileName = ref('')
+const currentImageUrl = ref<string | null>(null)
 
 const isFormValid = computed(() => {
   const nameOk = !!formData.value.name && formData.value.name.trim().length >= 2
@@ -185,12 +224,26 @@ async function loadProduct() {
       stock: p.stock ?? 0,
       categoryId: p.categoryId ?? null
     }
+    // Guardamos la URL actual de la imagen para mostrarla
+    currentImageUrl.value = p.imageUrl || null
   } catch (err: any) {
     console.error('Error al cargar producto:', err)
     if (err?.response?.status === 404) generalError.value = 'Producto no encontrado'
     else generalError.value = err?.response?.data?.message || 'Error al cargar producto'
   } finally {
     loadingProduct.value = false
+  }
+}
+
+// Manejar selección de archivo
+function handleFileChange(event: Event) {
+  const target = event.target as HTMLInputElement
+  if (target.files && target.files[0]) {
+    selectedFile.value = target.files[0]
+    selectedFileName.value = target.files[0].name
+  } else {
+    selectedFile.value = null
+    selectedFileName.value = ''
   }
 }
 
@@ -207,8 +260,6 @@ function validateForm() {
 
   if (formData.value.stock != null && (!Number.isInteger(formData.value.stock) || formData.value.stock < 0)) errors.value.stock = 'El stock debe ser un entero no negativo'
 
-  if (formData.value.imageUrl && !/^https?:\/\//i.test(formData.value.imageUrl)) errors.value.imageUrl = 'La URL de la imagen debe comenzar con http:// o https://'
-
   return Object.keys(errors.value).length === 0
 }
 
@@ -218,12 +269,34 @@ async function handleSave() {
 
   loading.value = true
   generalError.value = ''
+  statusMessage.value = 'Procesando...'
+
   try {
+    let finalImageKey = formData.value.imageUrl; // Mantener imagen actual por defecto
+
+    // 1. Si hay archivo seleccionado, subimos a AWS S3 primero
+    if (selectedFile.value) {
+      statusMessage.value = 'Subiendo nueva imagen...'
+      
+      const formDataImage = new FormData()
+      formDataImage.append('imagen', selectedFile.value) // Debe coincidir con backend upload.single('imagen')
+
+      // Hacemos POST al endpoint de carga
+      const resUpload = await api.post('/products/upload-image', formDataImage, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      })
+      
+      finalImageKey = resUpload.data.imageKey // Ej: "productos/123_foto.jpg"
+    }
+
+    // 2. Actualizamos el producto con la nueva Key de imagen (si aplica)
+    statusMessage.value = 'Actualizando producto...'
+
     const payload: any = {
       name: formData.value.name.trim(),
       description: formData.value.description?.trim() || undefined,
       price: Number(formData.value.price),
-      imageUrl: formData.value.imageUrl?.trim() || undefined,
+      imageUrl: finalImageKey || undefined,
       stock: formData.value.stock != null ? Number(formData.value.stock) : 0,
       categoryId: formData.value.categoryId ?? undefined
     }
@@ -232,11 +305,18 @@ async function handleSave() {
     router.push({ path: '/adminproductos', query: { success: 'updated', name: updated.name } })
   } catch (err: any) {
     console.error('Error al actualizar producto:', err)
-    if (err?.response?.status === 404) generalError.value = 'Producto no encontrado'
-    else generalError.value = err?.response?.data?.message || 'Error al actualizar producto'
+    const message = err?.response?.data?.message || err?.response?.data?.error || 'Error inesperado al actualizar el producto'
+    
+    if (err?.response?.status === 404) {
+      generalError.value = 'Producto no encontrado'
+    } else {
+      generalError.value = message
+    }
+    
     toast.error('Error al actualizar producto', { autoClose: 2000 })
   } finally {
     loading.value = false
+    statusMessage.value = 'Guardando...'
   }
 }
 
