@@ -15,7 +15,7 @@
       <div class="flex items-start justify-between">
         <div class="text-left">
           <h2 class="text-3xl font-extrabold text-gray-900">Crear Nuevo Producto</h2>
-          <p class="mt-1 text-sm text-gray-600">Agrega un producto al catálogo</p>
+          <p class="mt-1 text-sm text-gray-600">Agrega un producto al catálogo (Imágenes vía AWS S3)</p>
         </div>
 
         <div class="flex items-center">
@@ -27,7 +27,7 @@
           >
             <div v-if="loading" class="flex items-center">
               <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-              Creando...
+              {{ statusMessage }}
             </div>
             <span v-else class="flex items-center">
               <Icon icon="mdi:content-save" class="w-4 h-4 mr-2" />
@@ -41,7 +41,6 @@
     <div class="w-full">
       <div class="bg-white py-8 px-6 shadow sm:rounded-lg">
         <form @submit.prevent="handleSubmit" class="space-y-6 w-full">
-          <!-- Nombre -->
           <div>
             <label for="name" class="block text-sm font-medium text-gray-700">Nombre *</label>
             <div class="mt-1">
@@ -59,7 +58,6 @@
             </div>
           </div>
 
-          <!-- Descripción -->
           <div>
             <label for="description" class="block text-sm font-medium text-gray-700">Descripción (opcional)</label>
             <div class="mt-1">
@@ -77,7 +75,6 @@
             </div>
           </div>
 
-          <!-- Precio y Stock -->
           <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <label for="price" class="block text-sm font-medium text-gray-700">Precio (USD) *</label>
@@ -120,7 +117,7 @@
                 <select
                   id="category"
                   v-model="formData.categoryId"
-                  class="block w-full rounded-md border-gray-300 shadow-sm sm:text-sm py-2 px-3"
+                  class="block w-full rounded-md border-gray-300 shadow-sm sm:text-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 border"
                 >
                   <option :value="null">Sin categoría</option>
                   <option v-for="c in categoriesList" :key="c.id" :value="c.id">{{ c.name }}</option>
@@ -129,23 +126,29 @@
             </div>
           </div>
 
-          <!-- Image URL -->
           <div>
-            <label for="imageUrl" class="block text-sm font-medium text-gray-700">URL de imagen (opcional)</label>
-            <div class="mt-1">
+            <label class="block text-sm font-medium text-gray-700">Imagen del Producto</label>
+            <div class="mt-1 flex items-center">
               <input
-                id="imageUrl"
-                v-model="formData.imageUrl"
-                type="url"
-                class="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                :class="{ 'border-red-300 focus:border-red-500 focus:ring-red-500': errors.imageUrl }"
-                placeholder="https://..."
+                type="file"
+                @change="handleFileChange"
+                accept="image/*"
+                class="block w-full text-sm text-gray-500
+                  file:mr-4 file:py-2 file:px-4
+                  file:rounded-md file:border-0
+                  file:text-sm file:font-semibold
+                  file:bg-indigo-50 file:text-indigo-700
+                  hover:file:bg-indigo-100"
               />
-              <p v-if="errors.imageUrl" class="mt-2 text-sm text-red-600">{{ errors.imageUrl }}</p>
             </div>
+            <p v-if="selectedFileName" class="mt-1 text-sm text-green-600">
+               Archivo seleccionado: {{ selectedFileName }}
+            </p>
+            <p v-else class="mt-1 text-xs text-gray-500">
+               Si no seleccionas imagen, se guardará sin foto.
+            </p>
           </div>
 
-          <!-- Mensaje de error general -->
           <div v-if="generalError" class="bg-red-50 border border-red-200 rounded-md p-4">
             <div class="flex">
               <Icon icon="mdi:alert-circle" class="h-5 w-5 text-red-400" />
@@ -168,6 +171,7 @@ import { useRouter } from 'vue-router'
 import { Icon } from '@iconify/vue'
 import { useProducts } from '../../../composables/productos/useProducts'
 import { useCategories } from '../../../composables/categories/useCategories'
+import { api } from '../../../lib/api'
 
 type CreateProductDto = {
   name: string
@@ -182,8 +186,15 @@ const router = useRouter()
 const { createProduct } = useProducts()
 const { fetchCategories, filteredCategories } = useCategories()
 
+// Datos del formulario
 const formData = ref<CreateProductDto>({ name: '', description: '', price: 0, imageUrl: '', stock: 0, categoryId: null })
+
+// Estado para el archivo
+const selectedFile = ref<File | null>(null)
+const selectedFileName = ref('')
+
 const loading = ref(false)
+const statusMessage = ref('Guardando...') // Para mostrar "Subiendo imagen..." o "Creando..."
 const generalError = ref('')
 const errors = ref<Record<string, string>>({})
 
@@ -195,6 +206,18 @@ const isFormValid = computed(() => {
   return nameOk && priceOk && !loading.value
 })
 
+// Manejar selección de archivo
+function handleFileChange(event: Event) {
+  const target = event.target as HTMLInputElement
+  if (target.files && target.files[0]) {
+    selectedFile.value = target.files[0]
+    selectedFileName.value = target.files[0].name
+  } else {
+    selectedFile.value = null
+    selectedFileName.value = ''
+  }
+}
+
 function validateForm() {
   errors.value = {}
 
@@ -202,26 +225,12 @@ function validateForm() {
     errors.value.name = 'El nombre es obligatorio'
   } else if (formData.value.name.trim().length < 2) {
     errors.value.name = 'El nombre debe tener al menos 2 caracteres'
-  } else if (formData.value.name.trim().length > 200) {
-    errors.value.name = 'El nombre no puede exceder 200 caracteres'
-  }
-
-  if (formData.value.description && formData.value.description.length > 1000) {
-    errors.value.description = 'La descripción no puede exceder 1000 caracteres'
   }
 
   if (formData.value.price == null || isNaN(Number(formData.value.price))) {
-    errors.value.price = 'El precio es obligatorio y debe ser un número'
+    errors.value.price = 'El precio es obligatorio'
   } else if (Number(formData.value.price) < 0) {
     errors.value.price = 'El precio no puede ser negativo'
-  }
-
-  if (formData.value.stock != null && (!Number.isInteger(formData.value.stock) || formData.value.stock < 0)) {
-    errors.value.stock = 'El stock debe ser un entero no negativo'
-  }
-
-  if (formData.value.imageUrl && !/^https?:\/\//i.test(formData.value.imageUrl)) {
-    errors.value.imageUrl = 'La URL de la imagen debe comenzar con http:// o https://'
   }
 
   return Object.keys(errors.value).length === 0
@@ -232,13 +241,35 @@ async function handleSubmit() {
 
   loading.value = true
   generalError.value = ''
+  statusMessage.value = 'Procesando...'
 
   try {
+    let finalImageKey = null;
+
+    // 1. Si hay archivo, subimos a AWS S3 primero
+    if (selectedFile.value) {
+      statusMessage.value = 'Subiendo imagen...'
+      
+      const formDataImage = new FormData()
+      formDataImage.append('imagen', selectedFile.value) // Debe coincidir con backend upload.single('imagen')
+
+      // Hacemos POST al endpoint de carga
+      // Asumimos que la ruta base de api es '/api' y products router está en '/products'
+      const resUpload = await api.post('/products/upload-image', formDataImage, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      })
+      
+      finalImageKey = resUpload.data.imageKey // Ej: "productos/123_foto.jpg"
+    }
+
+    // 2. Creamos el producto con la Key de la imagen
+    statusMessage.value = 'Creando producto...'
+
     const payload: CreateProductDto = {
       name: formData.value.name.trim(),
       description: formData.value.description?.trim() || undefined,
       price: Number(formData.value.price),
-      imageUrl: formData.value.imageUrl?.trim() || undefined,
+      imageUrl: finalImageKey || undefined, // Enviamos el Key de S3
       stock: formData.value.stock != null ? Number(formData.value.stock) : 0,
       categoryId: formData.value.categoryId ?? undefined
     }
@@ -252,6 +283,7 @@ async function handleSubmit() {
     generalError.value = message
   } finally {
     loading.value = false
+    statusMessage.value = 'Guardar'
   }
 }
 
@@ -262,14 +294,13 @@ function goBack() {
 onMounted(async () => {
   try {
     await fetchCategories()
-    // filteredCategories es un computed; convertir a array para el select
     categoriesList.value = Array.isArray(filteredCategories.value) ? filteredCategories.value : []
   } catch (err) {
-    // ignore; el select puede quedar vacío
+    // ignore
   }
 })
 </script>
 
 <style scoped>
-/* estilos mínimos; diseño con Tailwind */
+/* Estilos adicionales si hacen falta */
 </style>
