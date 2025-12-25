@@ -7,11 +7,17 @@ export const useProductsStore = defineStore('products', () => {
   const loading = ref(false)
   const error = ref<string | null>(null)
 
-  async function fetchProducts() {
+  // Aceptamos un parámetro opcional 'search'
+  async function fetchProducts(search?: string) {
     loading.value = true
     error.value = null
     try {
-      const res = await api.get('/products')
+      // Enviamos el parámetro de búsqueda a la API
+      // El backend recibirá: /products?search=termino
+      const res = await api.get('/products', {
+        params: { search }
+      })
+      
       // Normalize and keep a stable order in the frontend (by id ascending)
       const list = res?.data ?? []
       products.value = Array.isArray(list) ? list.slice().sort((a: any, b: any) => (a.id ?? 0) - (b.id ?? 0)) : list
