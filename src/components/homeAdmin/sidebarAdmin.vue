@@ -47,6 +47,18 @@
         </div>
         <span v-if="!collapsed" class="text-sm font-medium">Categorías</span>
       </router-link>
+
+      <router-link
+        to="/adminproductos/auditoria"
+        :class="['flex items-center gap-3 px-3 py-2 rounded-md text-slate-700 hover:bg-slate-100', isActive('/adminproductos/auditoria') ? 'bg-slate-100 font-semibold' : '']"
+        aria-label="Auditoría"
+        :title="'Auditoría'"
+      >
+        <div class="flex items-center justify-center w-6">
+          <Icon icon="hugeicons:audit-02" width="24" height="24" />
+        </div>
+        <span v-if="!collapsed" class="text-sm font-medium">Auditoría</span>
+      </router-link>
     </nav>
 
     <div class="mt-auto text-xs text-slate-400 px-3" v-if="!collapsed">

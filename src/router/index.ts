@@ -74,6 +74,11 @@ const routes = [
         component: () => import('../components/formularios/productos/editProduct.vue'),
         props: true,
       },
+      {
+        path: 'auditoria',
+        name: 'AuditLogs',
+        component: () => import('../components/homeAdmin/auditLogsAdmin.vue'),
+      },
     ],
   },
   
